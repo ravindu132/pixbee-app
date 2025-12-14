@@ -1,19 +1,10 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google"; // Switch to Google Font
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+// Setup the font
+const inter = Inter({ subsets: ["latin"] });
 
-// This is the part that sets your App Icon
 export const metadata: Metadata = {
   title: "PixBee Agency",
   description: "Manage your creative empire",
@@ -27,7 +18,6 @@ export const metadata: Metadata = {
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0", 
 };
 
-// This was the missing part!
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,9 +25,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      {/* Apply the Google Font class here */}
+      <body className={inter.className}>
         {children}
       </body>
     </html>
