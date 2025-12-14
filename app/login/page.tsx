@@ -8,67 +8,42 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email, password,
-    });
-
-    if (signInError) {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email, password,
-      });
-
-      if (signUpError) {
-        setMessage("Error: " + signUpError.message);
-      } else {
-        setMessage("Account created! Logging you in...");
-        router.push('/');
-      }
-    } else {
-      router.push('/');
-    }
-    setLoading(false);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) await supabase.auth.signUp({ email, password }); // Auto signup if fails
+    router.push('/');
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md border text-black">
-        <h1 className="text-2xl font-bold mb-6 text-center">PixBee Login</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6">
+      <div className="w-full max-w-sm flex flex-col items-center">
         
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Enter email"
-            className="p-3 border rounded w-full"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Enter password"
-            className="p-3 border rounded w-full"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        {/* Animated Logo Entry */}
+        <div className="mb-10 animate-[bounce_2s_infinite]">
+          <img src="/logo.png" alt="Logo" className="h-24 w-auto" />
+        </div>
+        
+        <h1 className="text-2xl font-black text-center mb-1">Welcome Back</h1>
+        <p className="text-gray-400 text-sm mb-8">Login to manage your hive</p>
+        
+        <form onSubmit={handleLogin} className="w-full space-y-4">
+          <div className="bg-gray-50 p-4 rounded-xl border focus-within:border-yellow-400 transition">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-transparent outline-none font-semibold" required />
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-xl border focus-within:border-yellow-400 transition">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-transparent outline-none font-semibold" required />
+          </div>
           
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="bg-black text-white p-3 rounded hover:bg-gray-800 disabled:opacity-50 font-bold"
-          >
-            {loading ? 'Processing...' : 'Login / Sign Up'}
+          <button type="submit" disabled={loading} className="w-full bg-black text-yellow-400 font-bold p-5 rounded-xl shadow-lg hover:scale-[1.02] transition flex justify-center mt-4">
+            {loading ? <div className="loader"></div> : 'Enter Dashboard →'}
           </button>
         </form>
-
-        {message && <p className="mt-4 text-center text-red-500">{message}</p>}
       </div>
     </div>
   );

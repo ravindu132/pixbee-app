@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+
+/* Loading Spinner Animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.loader {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #FACC15; /* Yellow Bee Color */
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #000000;
