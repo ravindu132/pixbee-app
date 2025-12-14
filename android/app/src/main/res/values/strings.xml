@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">pixbee</string>
+    <string name="title_activity_main">pixbee</string>
+    <string name="package_name">com.pixbee.app</string>
+    <string name="custom_url_scheme">com.pixbee.app</string>
+</resources>

@@ -1,65 +1,114 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
+export default function Dashboard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<any[]>([]);
+  const [newClientName, setNewClientName] = useState('');
+
+  useEffect(() => {
+    const getData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Fetch Clients and calculate totals
+      const { data } = await supabase
+        .from('clients')
+        .select(`*, work_logs (cost, status)`)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        const clientsWithMoney = data.map((client: any) => {
+          const totalOwed = client.work_logs
+            .filter((log: any) => log.status === 'UNBILLED')
+            .reduce((sum: number, log: any) => sum + log.cost, 0);
+          return { ...client, totalOwed };
+        });
+        setClients(clientsWithMoney);
+      }
+      setLoading(false);
+    };
+
+    getData();
+  }, [router]);
+
+  const addClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClientName) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('clients').insert([{ name: newClientName, user_id: user.id }]).select();
+      if (data) {
+        setClients([{ ...data[0], totalOwed: 0 }, ...clients]);
+        setNewClientName('');
+      }
+    }
+  };
+
+  if (loading) return <div className="p-10 text-black">Loading Dashboard...</div>;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-gray-50 text-black p-8">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Simple Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">PixBee Dashboard</h1>
+          <button 
+            onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+            className="text-sm text-red-500 hover:underline"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            Sign Out
+          </button>
+        </div>
+
+        {/* Add Client Form */}
+        <div className="bg-white p-6 rounded-lg border shadow-sm mb-8">
+          <h2 className="text-lg font-semibold mb-4">Add New Client</h2>
+          <form onSubmit={addClient} className="flex gap-4">
+            <input
+              type="text"
+              placeholder="Client Name"
+              className="flex-1 p-3 border rounded"
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button type="submit" className="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 font-bold">
+              Add
+            </button>
+          </form>
         </div>
-      </main>
+
+        {/* Client List */}
+        <h2 className="text-xl font-bold mb-4">Your Clients</h2>
+        <div className="grid gap-4">
+            {clients.map((client) => (
+              <div 
+                key={client.id} 
+                onClick={() => router.push(`/client?id=${client.id}`)}
+                className="p-4 bg-white border rounded shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center"
+              >
+                <div>
+                  <h3 className="font-bold text-lg">{client.name}</h3>
+                  <p className="text-xs text-gray-400">ID: {client.id.slice(0,4)}...</p>
+                </div>
+                <div className="text-right">
+                   <span className={`text-xl font-bold ${client.totalOwed > 0 ? 'text-green-600' : 'text-gray-300'}`}>
+                     ${client.totalOwed.toFixed(2)}
+                   </span>
+                   <p className="text-xs text-gray-500">Unbilled</p>
+                </div>
+              </div>
+            ))}
+        </div>
+
+      </div>
     </div>
   );
 }
