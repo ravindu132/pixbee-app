@@ -61,6 +61,13 @@ function ClientContent() {
     if (id) fetchData(id);
   };
 
+  const deleteLog = async (logId: string) => {
+    if (confirm("Delete this job from history?")) {
+      await supabase.from('work_logs').delete().eq('id', logId);
+      if (id) fetchData(id);
+    }
+  };
+
   const deleteClient = async () => {
     if (confirm("Delete this client?")) {
       await supabase.from('clients').delete().eq('id', id);
@@ -87,7 +94,6 @@ function ClientContent() {
             </div>
           </div>
           <div className="flex gap-2">
-             {/* THE NEW NAVIGATE BUTTON */}
              {unbilledTotal > 0 && (
                <button 
                  onClick={() => router.push(`/invoice/print?id=${client.id}`)}
@@ -96,7 +102,7 @@ function ClientContent() {
                  <span className="text-lg">📄</span> View Invoice
                </button>
              )}
-             <button onClick={deleteClient} className="text-red-500 text-xs font-bold border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">Delete</button>
+             <button onClick={deleteClient} className="text-red-500 text-xs font-bold border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">Delete Client</button>
           </div>
         </div>
 
@@ -135,6 +141,11 @@ function ClientContent() {
                      {log.status === 'UNBILLED' ? (
                        <button onClick={() => markPaid(log.id)} className="bg-green-100 text-green-800 text-xs font-bold px-4 py-2 rounded-lg hover:scale-105 transition">Mark Paid</button>
                      ) : <span className="bg-gray-200 text-gray-500 text-xs font-bold px-3 py-2 rounded-lg">PAID</span>}
+                     
+                     {/* DELETE JOB ICON */}
+                     <button onClick={() => deleteLog(log.id)} className="text-gray-300 hover:text-red-500 transition px-2">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                     </button>
                    </div>
                  </div>
                ))
