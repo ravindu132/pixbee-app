@@ -340,49 +340,58 @@ function InvoiceContent() {
 
       {/* 🟢 CRITICAL PRINT CSS */}
       <style jsx global>{`
-        /* 1. Mobile Fix: Allow horizontal scroll so paper isn't squished */
+        /* 1. SCREEN PREVIEW (Mobile) */
+        /* Allows you to scroll sideways on phone to see the full A4 bill */
         body {
-          overflow-x: auto; 
+          overflow-x: auto;
+          background: #f3f4f6; /* Light gray to distinguish paper */
         }
         
+        .invoice-container {
+           margin: 20px auto; /* Center paper on screen */
+        }
+
+        /* 2. PRINT MODE (PDF Generation) */
         @media print {
-          /* 2. Page Setup: A4, No Margins (hides header/footer URL) */
           @page {
             size: A4 portrait;
-            margin: 0 !important; 
+            margin: 0 !important; /* 🟢 REMOVES URL/DATE/HEADER/FOOTER */
           }
           
-          /* 3. Body Setup: Clear spacing */
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: white;
             height: 100%;
-            overflow: hidden !important; 
+            overflow: hidden !important; /* 🟢 PREVENTS 2ND BLANK PAGE */
           }
 
-          /* 4. Hide UI */
+          /* Hide UI buttons */
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
 
-          /* 5. The Paper Container: Locked Dimensions */
+          /* The Paper */
           .invoice-container {
+             /* Force Exact A4 Dimensions */
              width: 210mm !important;
              max-width: 210mm !important;
              min-width: 210mm !important;
              
-             /* 6. Height Fix: 296mm prevents 2nd blank page */
+             /* Height is slightly less than 297mm to prevent bleed-over */
              height: 296mm !important; 
              max-height: 296mm !important;
              
              margin: 0 !important;
-             padding: 10mm !important;
+             padding: 10mm !important; /* Internal padding */
+             
+             /* 🟢 ANTI-CROP FIX: Scales content slightly to fit safe area */
+             transform: scale(0.99) !important;
+             transform-origin: top left !important;
              
              page-break-after: avoid !important;
              page-break-before: avoid !important;
              overflow: hidden !important;
              border: none !important;
-             transform: none !important;
           }
         }
       `}</style>
