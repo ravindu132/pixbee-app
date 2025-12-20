@@ -11,7 +11,7 @@ function InvoiceContent() {
   const [client, setClient] = useState<any>(null);
   const [currentItems, setCurrentItems] = useState<any[]>([]);
   
-  // Stats for Single Project logic
+  // Stats
   const [projectStats, setProjectStats] = useState({ total: 0, prevPaid: 0, balance: 0 });
   const [isMixedProjects, setIsMixedProjects] = useState(false);
   
@@ -25,7 +25,6 @@ function InvoiceContent() {
   
   const isAllPaid = currentItems.length > 0 && currentItems.every(item => item.status === 'PAID');
 
-  // Set Browser Title for PDF Filename
   useEffect(() => {
     if (invoiceId) document.title = invoiceId;
     else document.title = "PixBee Invoice";
@@ -47,13 +46,11 @@ function InvoiceContent() {
       setCurrentItems(selectedData);
       setClient(selectedData[0].clients);
       
-      // Detect if Mixed Projects (different names)
       const firstRoot = getRootName(selectedData[0].description);
       const hasDifferentProjects = selectedData.some(item => getRootName(item.description) !== firstRoot);
       setIsMixedProjects(hasDifferentProjects);
 
       if (!hasDifferentProjects && selectedData[0].client_id) {
-         // Single Project: Calculate Stats
          const { data: relatedData } = await supabase
            .from('work_logs')
            .select('*')
@@ -61,7 +58,6 @@ function InvoiceContent() {
            .ilike('description', `${firstRoot}%`);
          if (relatedData) calculateProjectStats(selectedData, relatedData);
       } else {
-         // Mixed Projects: Reset Stats
          setProjectStats({ total: 0, prevPaid: 0, balance: 0 });
       }
     }
@@ -70,7 +66,6 @@ function InvoiceContent() {
       const { data: settingsData } = await supabase.from('business_settings').select('*').eq('user_id', user.id).single();
       if (settingsData) {
         setSettings(settingsData);
-        // Generate Invoice ID (INV-YYMMDD-SEQ)
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         const seq = String(settingsData.invoice_sequence || 200).padStart(4, '0');
         setInvoiceId(`INV-${dateStr}-${seq}`);
@@ -132,7 +127,6 @@ function InvoiceContent() {
 
   const currentTotal = currentItems.reduce((sum, item) => sum + item.cost, 0);
 
-  // 🟢 SMART PHONE FORMATTER (076... -> 9476...)
   const getWhatsAppUrl = (phone: string) => {
     if (!phone) return '';
     let cleanNum = phone.replace(/[^0-9]/g, ''); 
@@ -151,7 +145,7 @@ function InvoiceContent() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 relative print:py-0 print:bg-white">
       
-      {/* Configuration Bar (Hidden in Print) */}
+      {/* Configuration Bar */}
       <div className="w-full max-w-[210mm] bg-white p-4 mb-6 rounded-xl shadow-sm border print:hidden">
         <div className="flex justify-between items-center mb-4">
            <button onClick={() => router.back()} className="text-gray-500 text-xs font-bold hover:text-black">Back</button>
@@ -172,8 +166,7 @@ function InvoiceContent() {
         </div>
       </div>
 
-      {/* 🟢 INVOICE PAPER CONTAINER */}
-      {/* min-w-[210mm] forces mobile scrolling. overflow-hidden chops off 2nd page. */}
+      {/* PAPER */}
       <div className="invoice-container bg-white w-[210mm] min-w-[210mm] min-h-[297mm] p-12 shadow-2xl text-black relative overflow-hidden flex flex-col print:p-8 print:shadow-none print:m-0">
         
         {/* Watermark */}
@@ -252,10 +245,9 @@ function InvoiceContent() {
               </div>
            </div>
 
-           {/* Smart Total Box */}
+           {/* Total Box */}
            <div className="bg-black text-white p-6 rounded-xl w-64 shadow-lg print:shadow-none">
               {isMixedProjects ? (
-                /* Scenario 1: Mixed Projects (Simple) */
                 <>
                   <div className="flex justify-between items-center text-gray-300 mb-2">
                      <span className="text-xs font-medium">Subtotal</span>
@@ -268,7 +260,6 @@ function InvoiceContent() {
                   </div>
                 </>
               ) : (
-                /* Scenario 2: Single Project (Detailed) */
                 <>
                   <div className="flex justify-between mb-1">
                     <span className="text-xs opacity-70 font-medium">Project Total</span>
@@ -296,7 +287,7 @@ function InvoiceContent() {
            </div>
         </div>
 
-        {/* Contact & QR Footer */}
+        {/* Contact Footer */}
         <div className="border-t-2 border-black pt-4 flex justify-between items-end relative z-10">
           <div>
             <p className="font-bold text-black text-sm mb-1">{settings?.company_footer}</p>
@@ -312,7 +303,6 @@ function InvoiceContent() {
             </div>
           </div>
 
-          {/* QR CODE */}
           {qrUrl && (
             <div className="flex items-center gap-3">
                <div className="text-right">
@@ -325,7 +315,7 @@ function InvoiceContent() {
 
       </div>
 
-      {/* Modal Logic */}
+      {/* Modal */}
       {showAddBank && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
           <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
@@ -338,24 +328,23 @@ function InvoiceContent() {
         </div>
       )}
 
-      {/* 🟢 CRITICAL PRINT CSS */}
+      {/* 🟢 FINAL CSS FIXES */}
       <style jsx global>{`
-        /* 1. SCREEN PREVIEW (Mobile) */
-        /* Allows you to scroll sideways on phone to see the full A4 bill */
+        /* 1. SCREEN MODE: Scrollable on mobile */
         body {
           overflow-x: auto;
-          background: #f3f4f6; /* Light gray to distinguish paper */
+          background: #f3f4f6;
         }
-        
         .invoice-container {
-           margin: 20px auto; /* Center paper on screen */
+           margin: 20px auto;
         }
 
-        /* 2. PRINT MODE (PDF Generation) */
+        /* 2. PRINT MODE: PDF Generation */
         @media print {
+          /* REMOVE URL HEADERS (If browser allows) */
           @page {
             size: A4 portrait;
-            margin: 0 !important; /* 🟢 REMOVES URL/DATE/HEADER/FOOTER */
+            margin: 0 !important; 
           }
           
           html, body {
@@ -363,35 +352,34 @@ function InvoiceContent() {
             padding: 0 !important;
             background: white;
             height: 100%;
-            overflow: hidden !important; /* 🟢 PREVENTS 2ND BLANK PAGE */
+            /* 🟢 Stop 2nd Page */
+            overflow: hidden !important; 
           }
 
-          /* Hide UI buttons */
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
 
-          /* The Paper */
+          /* 🟢 MOBILE CROP FIX */
           .invoice-container {
-             /* Force Exact A4 Dimensions */
-             width: 210mm !important;
+             /* Use 100% width so it fits within mobile margins */
+             width: 100% !important;
              max-width: 210mm !important;
-             min-width: 210mm !important;
              
-             /* Height is slightly less than 297mm to prevent bleed-over */
-             height: 296mm !important; 
-             max-height: 296mm !important;
+             /* Reset min-width so it doesn't force clipping */
+             min-width: 0 !important;
              
-             margin: 0 !important;
-             padding: 10mm !important; /* Internal padding */
+             height: auto !important;
+             min-height: 290mm !important;
              
-             /* 🟢 ANTI-CROP FIX: Scales content slightly to fit safe area */
-             transform: scale(0.99) !important;
-             transform-origin: top left !important;
+             margin: 0 auto !important;
+             padding: 10mm !important;
              
-             page-break-after: avoid !important;
-             page-break-before: avoid !important;
-             overflow: hidden !important;
+             /* Scale down content to fit safe zone (90%) */
+             transform: scale(0.9) !important;
+             transform-origin: top center !important;
+             
              border: none !important;
+             overflow: visible !important;
           }
         }
       `}</style>
