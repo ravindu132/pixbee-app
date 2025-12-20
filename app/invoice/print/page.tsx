@@ -336,15 +336,52 @@ function InvoiceContent() {
         </div>
       )}
 
+      {/* 🟢 FIXED MOBILE PDF CSS */}
       <style jsx global>{`
         @media print {
-          @page { size: A4; margin: 0; }
-          body { background: white; transform: scale(0.95); width: 105.2%; }
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          
+          body {
+            background: white;
+            margin: 0;
+            padding: 0;
+            /* Force exact A4 dimensions */
+            width: 210mm;
+            height: 297mm;
+            /* Critical for Mobile: Scale content to fit width */
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* Hide everything else */
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:w-full { width: 100% !important; max-width: 100% !important; }
-          .invoice-container { height: 100vh; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+          /* The Invoice Container */
+          .invoice-container {
+             width: 100% !important;
+             max-width: 210mm !important;
+             /* Force height to match A4 exactly so no 2nd page spills over */
+             height: 297mm !important; 
+             max-height: 297mm !important;
+             overflow: hidden !important; /* Cut off anything that spills */
+             margin: 0 !important;
+             padding: 40px !important; /* Internal padding for the paper */
+             page-break-after: avoid !important;
+             page-break-before: avoid !important;
+          }
+
+          /* Mobile Specific Override */
+          @media screen and (max-width: 768px) {
+            body {
+              /* On mobile "Save to PDF", sometimes we need to zoom out slightly */
+              transform: scale(1); 
+              width: 100%;
+            }
+          }
         }
       `}</style>
     </div>
