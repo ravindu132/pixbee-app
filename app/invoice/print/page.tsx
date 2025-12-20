@@ -38,8 +38,6 @@ function InvoiceContent() {
 
   const fetchData = async (ids: string[]) => {
     const { data: { user } } = await supabase.auth.getUser();
-    
-    // 1. Get Selected Items
     const { data: selectedData } = await supabase.from('work_logs').select(`*, clients(*)`).in('id', ids);
     
     if (selectedData && selectedData.length > 0) {
@@ -174,131 +172,113 @@ function InvoiceContent() {
           {isAllPaid ? 'PAID' : 'PENDING'}
         </div>
 
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-4 border-black pb-6 mb-8 relative z-10 mt-6">
-          <div className="flex items-center gap-4">
-            <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
-            <div>
-              <h1 className="text-2xl font-black tracking-tight uppercase">{settings?.company_name || 'My Agency'}</h1>
-              <p className="text-xs text-gray-500 font-bold tracking-widest uppercase">{settings?.company_slogan || 'Creative Solutions'}</p>
+        {/* 🟢 Main Content Wrapper (Grows to push footer down) */}
+        <div className="flex-grow">
+          
+          {/* Header */}
+          <div className="flex justify-between items-start border-b-4 border-black pb-4 mb-6 relative z-10 mt-2">
+            <div className="flex items-center gap-4">
+              <img src="/logo.png" alt="Logo" className="h-14 w-auto object-contain" />
+              <div>
+                <h1 className="text-xl font-black tracking-tight uppercase">{settings?.company_name || 'My Agency'}</h1>
+                <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">{settings?.company_slogan || 'Creative Solutions'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <h1 className="text-2xl font-black text-gray-900 tracking-widest">{isAllPaid ? 'RECEIPT' : 'INVOICE'}</h1>
+              <p className="font-bold text-xs mt-1 text-gray-600 font-mono tracking-wide">{invoiceId}</p>
             </div>
           </div>
-          <div className="text-right">
-             <h1 className="text-3xl font-black text-gray-900 tracking-widest">{isAllPaid ? 'RECEIPT' : 'INVOICE'}</h1>
-             <p className="font-bold text-sm mt-1 text-gray-600 font-mono tracking-wide">{invoiceId}</p>
-          </div>
-        </div>
 
-        {/* Client Info */}
-        <div className="grid grid-cols-2 gap-10 mb-10 relative z-10">
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">From</p>
-            <p className="font-bold text-base">{settings?.company_name}</p>
-            <p className="text-xs text-gray-500">{settings?.company_address}</p>
-            <p className="text-xs text-gray-500">{settings?.company_email}</p>
-            <p className="text-xs text-gray-500">{settings?.company_phone}</p>
+          {/* Client Info */}
+          <div className="grid grid-cols-2 gap-8 mb-6 relative z-10">
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">From</p>
+              <p className="font-bold text-sm">{settings?.company_name}</p>
+              <p className="text-[10px] text-gray-500">{settings?.company_address}</p>
+              <p className="text-[10px] text-gray-500">{settings?.company_email}</p>
+              <p className="text-[10px] text-gray-500">{settings?.company_phone}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Bill To</p>
+              <p className="font-bold text-sm">{client.name}</p>
+              <p className="text-[10px] text-gray-500">{client.phone}</p>
+              <p className="text-[10px] text-gray-500 mt-2">Date: <span className="font-bold text-black">{new Date().toLocaleDateString()}</span></p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Bill To</p>
-            <p className="font-bold text-lg">{client.name}</p>
-            <p className="text-xs text-gray-500">{client.phone}</p>
-            <p className="text-xs text-gray-500 mt-2">Date: <span className="font-bold text-black">{new Date().toLocaleDateString()}</span></p>
-          </div>
-        </div>
 
-        {/* Items Table */}
-        <table className="w-full mb-8 relative z-10">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="py-3 px-4 text-left text-[10px] font-black uppercase text-gray-600 tracking-wider">Description</th>
-              <th className="py-3 px-4 text-left text-[10px] font-black uppercase text-gray-600 tracking-wider">Date</th>
-              <th className="py-3 px-4 text-right text-[10px] font-black uppercase text-gray-600 tracking-wider">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.map((item) => (
-              <tr key={item.id} className="border-b border-gray-100">
-                <td className="py-3 px-4 font-bold text-sm text-gray-800">
-                  {item.description}
-                  {item.status === 'PAID' && <span className="ml-2 text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Paid</span>}
-                </td>
-                <td className="py-3 px-4 text-xs text-gray-500 font-medium">{new Date(item.date).toLocaleDateString()}</td>
-                <td className="py-3 px-4 text-right font-bold text-sm text-black">LKR {item.cost.toLocaleString()}</td>
+          {/* Items Table */}
+          <table className="w-full mb-6 relative z-10">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="py-2 px-3 text-left text-[9px] font-black uppercase text-gray-600 tracking-wider">Description</th>
+                <th className="py-2 px-3 text-left text-[9px] font-black uppercase text-gray-600 tracking-wider">Date</th>
+                <th className="py-2 px-3 text-right text-[9px] font-black uppercase text-gray-600 tracking-wider">Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {currentItems.map((item) => (
+                <tr key={item.id} className="border-b border-gray-100">
+                  <td className="py-2 px-3 font-bold text-xs text-gray-800">
+                    {item.description}
+                    {item.status === 'PAID' && <span className="ml-2 text-[8px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Paid</span>}
+                  </td>
+                  <td className="py-2 px-3 text-[10px] text-gray-500 font-medium">{new Date(item.date).toLocaleDateString()}</td>
+                  <td className="py-2 px-3 text-right font-bold text-xs text-black">LKR {item.cost.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {/* Footer Area */}
-        <div className="flex justify-between items-start mt-auto relative z-10 gap-8 mb-8">
-           
-           {/* Bank Details */}
-           <div className="flex-1 bg-gray-50 bg-opacity-50 p-4 rounded-xl border border-gray-100 min-h-[100px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Payment Methods</p>
-              <div className="space-y-3">
-                {allBanks.filter(b => selectedBankIds.includes(b.id)).map(bank => (
-                  <div key={bank.id} className="text-xs text-gray-700 border-l-2 border-gray-300 pl-3">
-                    <p className="font-bold text-black">{bank.bank_name}</p>
-                    <p>Acc: <span className="font-mono font-bold">{bank.account_number}</span></p>
-                  </div>
-                ))}
-              </div>
-           </div>
+          {/* Totals & Banks */}
+          <div className="flex justify-between items-start relative z-10 gap-6 mb-4">
+            {/* Bank Details */}
+            <div className="flex-1 bg-gray-50 bg-opacity-50 p-3 rounded-lg border border-gray-100 min-h-[80px]">
+                <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Payment Methods</p>
+                <div className="space-y-2">
+                  {allBanks.filter(b => selectedBankIds.includes(b.id)).map(bank => (
+                    <div key={bank.id} className="text-[10px] text-gray-700 border-l-2 border-gray-300 pl-2">
+                      <p className="font-bold text-black">{bank.bank_name}</p>
+                      <p>Acc: <span className="font-mono font-bold">{bank.account_number}</span></p>
+                    </div>
+                  ))}
+                </div>
+            </div>
 
-           {/* Total Box */}
-           <div className="bg-black text-white p-6 rounded-xl w-64 shadow-lg print:shadow-none">
-              {isMixedProjects ? (
-                <>
-                  <div className="flex justify-between items-center text-gray-300 mb-2">
-                     <span className="text-xs font-medium">Subtotal</span>
-                     <span className="font-bold text-sm">LKR {currentTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="border-t border-white/20 my-2"></div>
-                  <div className="flex justify-between items-center text-white mt-1">
-                     <span className="font-bold text-base uppercase">Total Due</span>
-                     <span className="font-black text-xl">LKR {currentTotal.toLocaleString()}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs opacity-70 font-medium">Project Total</span>
-                    <span className="font-bold text-sm text-white">LKR {projectStats.total.toLocaleString()}</span>
-                  </div>
-                  {projectStats.prevPaid > 0 && (
-                    <div className="flex justify-between mb-1 text-red-400">
-                      <span className="text-xs font-medium">Advance Paid</span>
-                      <span className="font-bold text-sm">- {projectStats.prevPaid.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="border-t border-white/20 my-2"></div>
-                  <div className="flex justify-between items-center text-green-400 mb-1">
-                     <span className="font-bold text-base">Current Bill</span>
-                     <span className="font-black text-xl">LKR {currentTotal.toLocaleString()}</span>
-                  </div>
-                  {projectStats.balance > 0 && (
-                    <div className="flex justify-between items-center text-yellow-400 mt-2 pt-2 border-t border-dashed border-white/20">
-                       <span className="font-bold text-xs uppercase tracking-wide">Project Bal</span>
-                       <span className="font-bold text-lg">LKR {projectStats.balance.toLocaleString()}</span>
-                    </div>
-                  )}
-                </>
-              )}
-           </div>
+            {/* Total Box */}
+            <div className="bg-black text-white p-4 rounded-xl w-56 shadow-lg print:shadow-none">
+                <div className="flex justify-between items-center text-gray-300 mb-2">
+                    <span className="text-[10px] font-medium">Subtotal</span>
+                    <span className="font-bold text-xs">LKR {currentTotal.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-white/20 my-2"></div>
+                <div className="flex justify-between items-center text-white mt-1">
+                    <span className="font-bold text-sm uppercase">Total Due</span>
+                    <span className="font-black text-lg">LKR {currentTotal.toLocaleString()}</span>
+                </div>
+            </div>
+          </div>
+        
+        </div> {/* End of Flex Grow */}
+
+        {/* 🟢 SYSTEM GENERATED BANNER (Explicitly placed before footer) */}
+        <div className="border border-gray-200 rounded-lg p-2 text-center mb-4 bg-white z-10 relative">
+          <p className="font-bold text-gray-600 uppercase tracking-widest text-[9px] mb-0.5">SYSTEM GENERATED INVOICE</p>
+          <p className="text-[8px] text-gray-400 italic">This is a computer-generated document. No signature is required.</p>
         </div>
 
-        {/* Contact Footer */}
-        <div className="border-t-2 border-black pt-4 flex justify-between items-end relative z-10">
+        {/* 🟢 FOOTER (Contact & QR) */}
+        <div className="border-t-2 border-black pt-3 flex justify-between items-end relative z-10">
           <div>
-            <p className="font-bold text-black text-sm mb-1">{settings?.company_footer}</p>
+            <p className="font-bold text-black text-xs mb-1">{settings?.company_footer}</p>
             <div className="flex items-center gap-4 mt-2">
                <div>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Contact Us</p>
-                  <p className="text-xs font-bold text-black flex items-center gap-1">
+                  <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Contact Us</p>
+                  <p className="text-[10px] font-bold text-black flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.68-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
                     {settings?.company_phone || '+94 77 000 0000'}
                   </p>
-                  <p className="text-[10px] text-gray-500 mt-1">{settings?.company_email}</p>
+                  <p className="text-[9px] text-gray-500 mt-1">{settings?.company_email}</p>
                </div>
             </div>
           </div>
@@ -306,9 +286,9 @@ function InvoiceContent() {
           {qrUrl && (
             <div className="flex items-center gap-3">
                <div className="text-right">
-                  <p className="text-[10px] font-bold uppercase text-gray-400 leading-tight">Scan to<br/>WhatsApp</p>
+                  <p className="text-[8px] font-bold uppercase text-gray-400 leading-tight">Scan to<br/>WhatsApp</p>
                </div>
-               <img src={qrUrl} alt="WhatsApp QR" className="w-16 h-16 border-2 border-black rounded-lg p-1" />
+               <img src={qrUrl} alt="WhatsApp QR" className="w-14 h-14 border-2 border-black rounded-lg p-0.5" />
             </div>
           )}
         </div>
@@ -328,9 +308,8 @@ function InvoiceContent() {
         </div>
       )}
 
-      {/* 🟢 FINAL CSS FIXES */}
+      {/* CSS */}
       <style jsx global>{`
-        /* 1. SCREEN MODE: Scrollable on mobile */
         body {
           overflow-x: auto;
           background: #f3f4f6;
@@ -339,9 +318,7 @@ function InvoiceContent() {
            margin: 20px auto;
         }
 
-        /* 2. PRINT MODE: PDF Generation */
         @media print {
-          /* REMOVE URL HEADERS (If browser allows) */
           @page {
             size: A4 portrait;
             margin: 0 !important; 
@@ -352,29 +329,26 @@ function InvoiceContent() {
             padding: 0 !important;
             background: white;
             height: 100%;
-            /* 🟢 Stop 2nd Page */
             overflow: hidden !important; 
           }
 
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
 
-          /* 🟢 MOBILE CROP FIX */
           .invoice-container {
-             /* Use 100% width so it fits within mobile margins */
              width: 100% !important;
              max-width: 210mm !important;
-             
-             /* Reset min-width so it doesn't force clipping */
              min-width: 0 !important;
              
              height: auto !important;
              min-height: 290mm !important;
              
              margin: 0 auto !important;
-             padding: 10mm !important;
              
-             /* Scale down content to fit safe zone (90%) */
+             /* 🟢 REDUCED PADDING FOR MOBILE FIT */
+             padding: 5mm !important;
+             
+             /* 🟢 SCALED DOWN CONTENT */
              transform: scale(0.9) !important;
              transform-origin: top center !important;
              
