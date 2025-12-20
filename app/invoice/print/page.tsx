@@ -11,7 +11,7 @@ function InvoiceContent() {
   const [client, setClient] = useState<any>(null);
   const [currentItems, setCurrentItems] = useState<any[]>([]);
   
-  // Stats
+  // Stats for Single Project logic
   const [projectStats, setProjectStats] = useState({ total: 0, prevPaid: 0, balance: 0 });
   const [isMixedProjects, setIsMixedProjects] = useState(false);
   
@@ -25,6 +25,7 @@ function InvoiceContent() {
   
   const isAllPaid = currentItems.length > 0 && currentItems.every(item => item.status === 'PAID');
 
+  // Set Browser Title for PDF Filename
   useEffect(() => {
     if (invoiceId) document.title = invoiceId;
     else document.title = "PixBee Invoice";
@@ -46,11 +47,13 @@ function InvoiceContent() {
       setCurrentItems(selectedData);
       setClient(selectedData[0].clients);
       
+      // Detect if Mixed Projects (different names)
       const firstRoot = getRootName(selectedData[0].description);
       const hasDifferentProjects = selectedData.some(item => getRootName(item.description) !== firstRoot);
       setIsMixedProjects(hasDifferentProjects);
 
       if (!hasDifferentProjects && selectedData[0].client_id) {
+         // Single Project: Calculate Stats
          const { data: relatedData } = await supabase
            .from('work_logs')
            .select('*')
@@ -58,6 +61,7 @@ function InvoiceContent() {
            .ilike('description', `${firstRoot}%`);
          if (relatedData) calculateProjectStats(selectedData, relatedData);
       } else {
+         // Mixed Projects: Reset Stats
          setProjectStats({ total: 0, prevPaid: 0, balance: 0 });
       }
     }
@@ -66,6 +70,7 @@ function InvoiceContent() {
       const { data: settingsData } = await supabase.from('business_settings').select('*').eq('user_id', user.id).single();
       if (settingsData) {
         setSettings(settingsData);
+        // Generate Invoice ID (INV-YYMMDD-SEQ)
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         const seq = String(settingsData.invoice_sequence || 200).padStart(4, '0');
         setInvoiceId(`INV-${dateStr}-${seq}`);
@@ -127,19 +132,13 @@ function InvoiceContent() {
 
   const currentTotal = currentItems.reduce((sum, item) => sum + item.cost, 0);
 
-  // 🟢 HELPER: SMART PHONE NUMBER FORMATTER
-  // Converts "076 001 0635" -> "94760010635" automatically
+  // 🟢 SMART PHONE FORMATTER (076... -> 9476...)
   const getWhatsAppUrl = (phone: string) => {
     if (!phone) return '';
-    
-    // 1. Remove all spaces, dashes, parentheses
     let cleanNum = phone.replace(/[^0-9]/g, ''); 
-    
-    // 2. If it starts with '0', remove the '0' and add '94' (Sri Lanka code)
     if (cleanNum.startsWith('0')) {
         cleanNum = '94' + cleanNum.substring(1);
     }
-    
     return `https://wa.me/${cleanNum}`;
   };
 
@@ -152,7 +151,7 @@ function InvoiceContent() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 relative print:py-0 print:bg-white">
       
-      {/* Configuration Bar */}
+      {/* Configuration Bar (Hidden in Print) */}
       <div className="w-full max-w-[210mm] bg-white p-4 mb-6 rounded-xl shadow-sm border print:hidden">
         <div className="flex justify-between items-center mb-4">
            <button onClick={() => router.back()} className="text-gray-500 text-xs font-bold hover:text-black">Back</button>
@@ -173,8 +172,9 @@ function InvoiceContent() {
         </div>
       </div>
 
-      {/* PAPER */}
-      <div className="invoice-container bg-white w-full max-w-[210mm] min-h-[297mm] p-12 shadow-2xl print:shadow-none print:w-full print:max-w-none text-black relative overflow-hidden flex flex-col print:p-8">
+      {/* 🟢 INVOICE PAPER CONTAINER */}
+      {/* min-w-[210mm] forces mobile scrolling. overflow-hidden chops off 2nd page. */}
+      <div className="invoice-container bg-white w-[210mm] min-w-[210mm] min-h-[297mm] p-12 shadow-2xl text-black relative overflow-hidden flex flex-col print:p-8 print:shadow-none print:m-0">
         
         {/* Watermark */}
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 text-9xl font-black border-8 rounded-3xl p-10 select-none pointer-events-none mix-blend-multiply ${isAllPaid ? 'text-green-600 border-green-600 opacity-20' : 'text-yellow-400 border-yellow-400 opacity-10'}`}>
@@ -236,7 +236,7 @@ function InvoiceContent() {
           </tbody>
         </table>
 
-        {/* Footer Area with Stats */}
+        {/* Footer Area */}
         <div className="flex justify-between items-start mt-auto relative z-10 gap-8 mb-8">
            
            {/* Bank Details */}
@@ -255,6 +255,7 @@ function InvoiceContent() {
            {/* Smart Total Box */}
            <div className="bg-black text-white p-6 rounded-xl w-64 shadow-lg print:shadow-none">
               {isMixedProjects ? (
+                /* Scenario 1: Mixed Projects (Simple) */
                 <>
                   <div className="flex justify-between items-center text-gray-300 mb-2">
                      <span className="text-xs font-medium">Subtotal</span>
@@ -267,6 +268,7 @@ function InvoiceContent() {
                   </div>
                 </>
               ) : (
+                /* Scenario 2: Single Project (Detailed) */
                 <>
                   <div className="flex justify-between mb-1">
                     <span className="text-xs opacity-70 font-medium">Project Total</span>
@@ -323,7 +325,7 @@ function InvoiceContent() {
 
       </div>
 
-      {/* Modal and Styles */}
+      {/* Modal Logic */}
       {showAddBank && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
           <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
@@ -336,51 +338,51 @@ function InvoiceContent() {
         </div>
       )}
 
-      {/* 🟢 FIXED MOBILE PDF CSS */}
+      {/* 🟢 CRITICAL PRINT CSS */}
       <style jsx global>{`
+        /* 1. Mobile Fix: Allow horizontal scroll so paper isn't squished */
+        body {
+          overflow-x: auto; 
+        }
+        
         @media print {
+          /* 2. Page Setup: A4, No Margins (hides header/footer URL) */
           @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 0 !important; 
           }
           
-          body {
+          /* 3. Body Setup: Clear spacing */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
             background: white;
-            margin: 0;
-            padding: 0;
-            /* Force exact A4 dimensions */
-            width: 210mm;
-            height: 297mm;
-            /* Critical for Mobile: Scale content to fit width */
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            height: 100%;
+            overflow: hidden !important; 
           }
 
-          /* Hide everything else */
+          /* 4. Hide UI */
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
 
-          /* The Invoice Container */
+          /* 5. The Paper Container: Locked Dimensions */
           .invoice-container {
-             width: 100% !important;
+             width: 210mm !important;
              max-width: 210mm !important;
-             /* Force height to match A4 exactly so no 2nd page spills over */
-             height: 297mm !important; 
-             max-height: 297mm !important;
-             overflow: hidden !important; /* Cut off anything that spills */
+             min-width: 210mm !important;
+             
+             /* 6. Height Fix: 296mm prevents 2nd blank page */
+             height: 296mm !important; 
+             max-height: 296mm !important;
+             
              margin: 0 !important;
-             padding: 40px !important; /* Internal padding for the paper */
+             padding: 10mm !important;
+             
              page-break-after: avoid !important;
              page-break-before: avoid !important;
-          }
-
-          /* Mobile Specific Override */
-          @media screen and (max-width: 768px) {
-            body {
-              /* On mobile "Save to PDF", sometimes we need to zoom out slightly */
-              transform: scale(1); 
-              width: 100%;
-            }
+             overflow: hidden !important;
+             border: none !important;
+             transform: none !important;
           }
         }
       `}</style>
